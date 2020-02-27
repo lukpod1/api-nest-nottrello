@@ -1,37 +1,51 @@
-import { UserDto, User } from './user.model';
 import { UserService } from './user.service';
-import { Controller, Post, Body, Res, Get, Param, Patch, Delete } from '@nestjs/common';
+import { Controller, Post, Body, Res, Get, Param, Patch, Delete, HttpStatus, NotFoundException, Put, Query } from '@nestjs/common';
+import { UserDto } from './dto/user.dto';
+import { User } from './interfaces/user.interface';
 
 @Controller('users')
 export class UserController {
-    constructor(private readonly usersService: UserService){}
+    constructor(private userService: UserService){}
 
     @Post()
-    addUser(@Body() userDto: UserDto) {
-        const generatedId = this.usersService.save(userDto);
-        return { id: generatedId };
+    async addUser(@Res() res, @Body() userDto: UserDto) {
+        const user = await this.userService.addUser(userDto);
+        return res.status(HttpStatus.OK).json({
+            message: "User has been created successfully",
+            user
+        })
     }
 
     @Get()
-    async getAllUsers(){
-        const users = await this.usersService.findAll();
-        return users;
+    async getAllUsers(@Res() res) {
+        const users = await this.userService.getAllUser();
+        return res.status(HttpStatus.OK).json(users);
     }
 
     @Get(':id')
-    getUser(@Param('id') userId: string){
-        return this.usersService.findById(userId);
+    async getUser(@Res() res, @Param('id') userId) {
+        const user = await this.userService.getUser(userId);
+        if (!user) throw new NotFoundException('User does not exist!');
+        return res.status(HttpStatus.OK).json(user);
     }
 
-    @Patch(':id')
-    async updateUser(@Param('id') id: string, @Body() user: User){
-        await this.usersService.update(id, user);
-        return user;
+    @Put()
+    async updateUser(@Res() res, @Query('userId') userId, @Body() userDto: UserDto) {
+        const user = await this.userService.updateUser(userId, userDto);
+        if (!user) throw new NotFoundException('User does not exist!');
+        return res.status(HttpStatus.OK).json({
+            message: 'User has been successfully updated',
+            user
+        });
     }
 
-    @Delete(':id')
-    async delete(@Param('id') id: string){
-        await this.usersService.delete(id);
-        return null;
+    @Delete()
+    async deleteUser(@Res() res, @Query('userId') userId) {
+        const user = await this.userService.deleteUser(userId);
+        if (!user) throw new NotFoundException('User does not exist');
+        return res.status(HttpStatus.OK).json({
+            message: 'User has been deleted',
+            user
+        })
     }
 }

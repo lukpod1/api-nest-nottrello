@@ -1,49 +1,35 @@
 import { Model } from 'mongoose';
-import { UserSchema, User, UserDto } from './user.model';
+import { UserDto } from './dto/user.dto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { User } from './interfaces/user.interface';
 
 @Injectable()
 export class UserService {
     constructor(@InjectModel('User') private readonly userModel: Model<User>){}
 
-    async save(userDto: UserDto){
-        const user = new this.userModel(userDto);
-        const result = await user.save();
-        console.log(result);
-        return result.id as string;
+    async addUser(userDto: UserDto) {
+        const newUser = await this.userModel(userDto);
+        return newUser.save();
     }
 
-    async findAll(){
+    async getAllUser() {
         const users = await this.userModel.find();
         return users;
     }
 
-    async findById(userId: string){
-        let user;
-        try {
-            user = await this.userModel.findById(userId);
-        } catch (error) {
-            throw new NotFoundException('Could not find user.');
-        }
-
-        if (!user) {
-            throw new NotFoundException('Could not find user.');
-        }
+    async getUser(userId) {
+        const user = await this.userModel.findById(userId);
         return user;
     }
 
-    async update(id: string, user: UserDto) {
-        await this.findById(id);
-        return this.userModel.update(user);
+    async updateUser(userId, userDto: UserDto) {
+        const updatedUser = await this.userModel.findByIdAndUpdate(userId, userDto, { new: true });
+        return updatedUser;
     }
 
-    async delete(id: string){
-        this.findById(id);
-        try {
-            await this.userModel.deleteOne({_id:id});
-        } catch (error) {
-            throw new NotFoundException('Could not find user.');
-        }
+    async deleteUser(userId) {
+        const deletedUser = await this.userModel.findByIdAndRemove(userId);
+        return deletedUser;
     }
 }
